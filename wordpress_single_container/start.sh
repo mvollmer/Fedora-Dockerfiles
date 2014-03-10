@@ -1,11 +1,5 @@
 #!/bin/bash
 
-__check() {
-if [ -f /var/www/html/wp-config.php ]; then
-  exit
-fi
-}
-
 __create_user() {
 # Create a user to SSH into as.
 SSH_USERPASS=`pwgen -c -n -1 8`
@@ -21,7 +15,7 @@ rm -rf /var/lib/mysql/ /etc/my.cnf
 yum -y install community-mysql community-mysql-server
 mysql_install_db
 chown -R mysql:mysql /var/lib/mysql
-/usr/bin/mysqld_safe & 
+/usr/bin/mysqld_safe &
 sleep 10
 }
 
@@ -30,7 +24,7 @@ __handle_passwords() {
 WORDPRESS_DB="wordpress"
 MYSQL_PASSWORD=`pwgen -c -n -1 12`
 WORDPRESS_PASSWORD=`pwgen -c -n -1 12`
-# This is so the passwords show up in logs. 
+# This is so the passwords show up in logs.
 echo mysql root password: $MYSQL_PASSWORD
 echo wordpress password: $WORDPRESS_PASSWORD
 echo $MYSQL_PASSWORD > /mysql-root-pw.txt
@@ -57,7 +51,7 @@ chown apache:apache /var/www/html/wp-config.php
 
 __start_mysql() {
 # systemctl start mysqld.service
-mysqladmin -u root password $MYSQL_PASSWORD 
+mysqladmin -u root password $MYSQL_PASSWORD
 mysql -uroot -p$MYSQL_PASSWORD -e "CREATE DATABASE wordpress; GRANT ALL PRIVILEGES ON wordpress.* TO 'wordpress'@'localhost' IDENTIFIED BY '$WORDPRESS_PASSWORD'; FLUSH PRIVILEGES;"
 killall mysqld
 sleep 10
@@ -68,10 +62,11 @@ supervisord -n
 }
 
 # Call all functions
-__check
-__create_user
-__mysql_config
-__handle_passwords
-__httpd_perms
-__start_mysql
+if [ ! -f /var/www/html/wp-config.php ]; then
+  __create_user
+  __mysql_config
+  __handle_passwords
+  __httpd_perms
+  __start_mysql
+fi
 __run_supervisor
